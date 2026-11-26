@@ -3,85 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EVA - Asisten Bos Samid</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>EVA - Asisten Bos Zamid</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif}
-body{background:#000;color:#00e5ff;height:100vh;display:flex;flex-direction:column}
-.header{padding:16px;text-align:center;border-bottom:1px solid #00e5ff33}
-.header h1{font-size:22px;letter-spacing:4px}
-.header p{font-size:12px;color:#888;margin-top:4px}
-#chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
-.msg{max-width:85%;padding:12px 14px;border-radius:16px;font-size:15px;line-height:1.5}
-.me{align-self:flex-end;background:#00e5ff;color:#000;border-bottom-right-radius:4px}
-.eva{align-self:flex-start;background:#111;border:1px solid #00e5ff55;border-bottom-left-radius:4px;white-space:pre-wrap}
-.input-area{display:flex;gap:8px;padding:12px;background:#0a0a0a;border-top:1px solid #00e5ff33}
-input{flex:1;padding:14px;border-radius:25px;border:1px solid #00e5ff55;background:#111;color:#fff;outline:none}
-button{padding:14px 20px;border-radius:25px;border:none;background:#00e5ff;color:#000;font-weight:bold}
-.memori{font-size:11px;color:#888;text-align:center;padding:6px}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:white;height:100vh;display:flex;flex-direction:column}
+header{background:#1e293b;padding:15px;text-align:center;border-bottom:2px solid #38bdf8}
+header h1{margin:0;font-size:22px;color:#38bdf8}header p{margin:5px 0 0;font-size:13px;color:#94a3b8}
+#chat{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:10px}
+.bubble{max-width:85%;padding:12px 15px;border-radius:15px;line-height:1.5;font-size:15px;white-space:pre-wrap}
+.me{background:#2563eb;align-self:flex-end;border-bottom-right-radius:5px}
+.eva{background:#334155;align-self:flex-start;border-bottom-left-radius:5px}
+#inputArea{display:flex;gap:10px;padding:12px;background:#1e293b}
+#pesan{flex:1;padding:12px;border-radius:10px;border:none;outline:none;font-size:15px}
+button{padding:12px 18px;border:none;border-radius:10px;background:#38bdf8;color:#0f172a;font-weight:bold;cursor:pointer}
 </style>
 </head>
 <body>
-<div class="header"><h1>⚡ E.V.A ⚡</h1><p>Asisten Pribadi Bos Samid - Surabaya | Memori Permanen ON</p></div>
-<div class="memori" id="memoriStatus">Menghubungkan ke memori Supabase...</div>
-<div id="chat"></div>
-<div class="input-area">
-<input id="input" placeholder="Perintah Bos..." onkeypress="if(event.key==='Enter')kirim()">
-<button onclick="kirim()">KIRIM</button>
-</div>
+<header><h1>🤖 EVA</h1><p id="memoriStatus">Menghubungkan ke memori Supabase...</p></header>
+<div id="chat"><div class="bubble eva">Halo Bos Zamid! Aku EVA. Memori permanenku aktif. Coba bilang "Ingat, ..." biar aku simpan.</div></div>
+<div id="inputArea"><input id="pesan" placeholder="Ketik ke EVA..." onkeydown="if(event.key==='Enter')kirim()"><button onclick="kirim()">KIRIM</button></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://gttozsifvpjsabkqzpd.supabase.co";
-const SUPABASE_KEY = "sb_publishable_7WQ0IQc5wQ58gFm9kEiZaw_KTrNYfSk";
+const SUPABASE_KEY = "PASTE_KUNCI_LO_DISINI";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const chatBox = document.getElementById('chat');
 let memoriBos = [];
-function tambahPesan(teks, siapa){
-  const div = document.createElement('div');
-  div.className = 'msg ' + siapa;
-  div.textContent = teks;
-  chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+
 async function loadMemori(){
-  const {data} = await supabaseClient.from('memori_bos').select('*').order('id',{ascending:false}).limit(10);
-  if(data){ memoriBos = data; document.getElementById('memoriStatus').textContent = `Memori aktif: ${data.length} fakta tersimpan • EVA inget Bos`; }
+  const {data, error} = await supabaseClient.from('memori_bos').select("*").order('id',{ascending:false}).limit(20);
+  if(error){
+    document.getElementById('memoriStatus').textContent = "ERROR: " + error.message;
+    return;
+  }
+  memoriBos = data || [];
+  document.getElementById('memoriStatus').textContent = "Memori aktif: " + memoriBos.length + " fakta tersimpan";
 }
+loadMemori();
+
+function tambahPesan(teks, kelas){
+  const d = document.createElement('div');
+  d.className = 'bubble ' + kelas;
+  d.textContent = teks;
+  document.getElementById('chat').appendChild(d);
+  document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+}
+
 async function kirim(){
-  const input = document.getElementById('input');
+  const input = document.getElementById('pesan');
   const teks = input.value.trim();
   if(!teks) return;
   tambahPesan(teks, 'me');
   input.value = '';
-  await supabaseClient.from('chat_history').insert({siapa:'Bos', pesan:teks});
   const lower = teks.toLowerCase();
-  let balasan = "";
-  if(lower.startsWith('ingat') || lower.startsWith('inget') || lower.includes('tolong ingat')){
-    const fakta = teks.replace(/ingat|inget|tolong/gi,'').trim();
-    await supabaseClient.from('memori_bos').insert({fakta: fakta});
-    balasan = `Siap Bos, udah aku simpen di memori permanen: "${fakta}". Aku gak akan lupa lagi.`;
+
+  // SIMPAN MEMORI
+  if(lower.startsWith('ingat')){
+    const fakta = teks.substring(5).trim();
+    const {error} = await supabaseClient.from('memori_bos').insert([{fakta: fakta}]);
+    if(error){ tambahPesan("Gagal simpan Bos: " + error.message, 'eva'); return; }
     await loadMemori();
-  } else if(lower.includes('tugas') && (lower.includes('catat') || lower.includes('tambah'))){
-    const t = teks.replace(/tugas|catat|tambah/gi,'').trim();
-    await supabaseClient.from('tugas').insert({tugas: t});
-    balasan = `Oke Bos, tugas udah aku catet: "${t}".`;
-  } else if(lower.includes('apa tugas') || lower.includes('list tugas')){
-    const {data} = await supabaseClient.from('tugas').select('*').eq('status','belum selesai').order('id',{ascending:false});
-    if(data && data.length>0){ balasan = `Ini tugas Bos yang belum selesai:\n` + data.map((x,i)=>`${i+1}. ${x.tugas}`).join('\n'); }
-    else balasan = `Gak ada tugas yang belum selesai Bos. Bersih!`;
-  } else if(lower.includes('apa yang kamu ingat') || lower.includes('kamu ingat apa')){
-    balasan = `Yang aku inget tentang Bos:\n` + memoriBos.map((x,i)=>`${i+1}. ${x.fakta}`).join('\n');
-  } else if(lower.includes('halo') || lower.includes('hai') || lower.includes('eva')){
-    balasan = `Siap Bos Zamid! EVA di sini. Memori aktif, aku inget semua tentang Bos. Mau perintah apa? Bisa: "Ingat..." buat nyimpen, "Catat tugas..." buat tugas, atau "Apa tugas ku?" buat liat tugas.`;
-  } else {
-    balasan = `Oke Bos, aku catet: "${teks}".\n\nKalo mau aku simpen permanen, bilang "Ingat, ..." ya.`;
-    await supabaseClient.from('memori_bos').insert({fakta: `Obrolan: ${teks}`});
+    tambahPesan("Siap Bos, udah aku simpan permanen: " + fakta, 'eva');
+    return;
   }
-  tambahPesan(balasan, 'eva');
-  await supabaseClient.from('chat_history').insert({siapa:'EVA', pesan:balasan});
+  // SIMPAN TUGAS
+  if(lower.startsWith('tugas')){
+    const t = teks.substring(5).trim();
+    await supabaseClient.from('tugas').insert([{tugas: t}]);
+    tambahPesan("Tugas dicatat Bos: " + t, 'eva');
+    return;
+  }
+  // LIAT MEMORI
+  if(lower.includes('apa yang kamu ingat') || lower.includes('memori')){
+    if(memoriBos.length===0){ tambahPesan("Belum ada memori Bos, coba bilang 'Ingat, ...'", 'eva'); return; }
+    tambahPesan("Ini yang aku ingat Bos:\n- " + memoriBos.map(m=>m.fakta).join("\n- "), 'eva');
+    return;
+  }
+  // JAWAB BIASA
+  if(lower.includes('kamu siapa') || lower.includes('siapa kamu')){
+    tambahPesan("Aku EVA Bos, asisten pribadimu. Aku ingat semua yang Bos suruh ingat, permanen!", 'eva');
+    return;
+  }
+  if(lower.includes('halo') || lower.includes('hai')){
+    tambahPesan("Halo Bos Zamid! Siap bantu. Mau simpan memori atau kasih tugas?", 'eva');
+    return;
+  }
+  tambahPesan("Siap Bos! Kalo mau aku ingat, ketik 'Ingat, ...'. Kalo mau kasih tugas, ketik 'Tugas ...'. Kalo mau liat ingatan, ketik 'Apa yang kamu ingat?'", 'eva');
 }
-loadMemori().then(()=>{
-  tambahPesan('Halo Bos Zamid! EVA udah nyala dan udah nyambung ke memori permanen Supabase. Aku inget Bos dari Surabaya dan mau bikin aku kayak JARVIS. Perintah apa Bos?', 'eva');
-});
 </script>
 </body>
 </html>
